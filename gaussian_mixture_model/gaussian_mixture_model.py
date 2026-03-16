@@ -7,19 +7,24 @@ class GaussianMixtureModel:
     def __init__(self, n_categories: int, n_features: int):
         self.n_categories = n_categories
 
-        self.pi = np.random.normal(size=(n_categories,))
-        self.mu = np.random.normal(size=(n_categories, n_features))
-        self.sigma = np.random.normal(size=(n_categories, n_features))
+        # every cluster equiprobable
+        self.pi = np.array([1 / n_categories for _ in range(n_categories)])
 
-    def log_likelihood(self, samples):
-        N, D = samples.shape
-        K = self.n_categories
+        # means all at zero
+        self.mu = np.zeros(shape=(n_categories, n_features))
 
+        # variances all at one to prevent initial division by zero
+        self.sigma = np.ones(shape=(n_categories, n_features))
+
+    def gaussian(self, samples):
         diff = samples[:, None, :] - self.mu[None, :, :]
         exponent = np.exp(-(diff**2) / (2 * self.sigma**2))
         gaussian = exponent / (np.sqrt(2 * np.pi) * self.sigma)
-        pdf = np.prod(gaussian, axis=2)
-        weighted = pdf * self.pi
+        return np.prod(gaussian, axis=2)
+
+    def log_likelihood(self, samples):
+        """Computes logP(X|θ)"""
+        weighted = self.gaussian(samples) * self.pi
 
         return np.sum(np.log(np.sum(weighted, axis=1)))
 
@@ -34,11 +39,8 @@ class GaussianMixtureModel:
 
 if __name__ == "__main__":
     df = pd.read_csv("gaussian_mixture_model/train.csv")
-    print(df)
-
     X = df.to_numpy()
-    print(X)
 
-    gmm = GaussianMixtureModel(2, len(df.columns))
+    gmm = GaussianMixtureModel(3, len(df.columns))
     ll = gmm.log_likelihood(X)
     print(f"log likelihood: {ll}")
