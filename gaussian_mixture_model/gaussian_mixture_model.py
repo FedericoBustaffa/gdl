@@ -18,11 +18,12 @@ class GaussianMixtureModel:
 
     def gaussian(self, samples):
         diff = samples[:, None, :] - self.mu[None, :, :]
-        exponent = np.exp(-(diff**2) / (2 * self.sigma**2))
-        gaussian = exponent / (np.sqrt(2 * np.pi) * self.sigma)
+        exponent = -(diff**2) / (2 * self.sigma**2)
+        gaussian = np.exp(exponent) / (np.sqrt(2 * np.pi) * self.sigma)
+
         return np.prod(gaussian, axis=2)
 
-    def log_likelihood(self, samples):
+    def log_likelihood(self, samples) -> np.ndarray:
         """Computes logP(X|θ)"""
         weighted = self.gaussian(samples) * self.pi
 
@@ -41,6 +42,6 @@ if __name__ == "__main__":
     df = pd.read_csv("gaussian_mixture_model/train.csv")
     X = df.to_numpy()
 
-    gmm = GaussianMixtureModel(3, len(df.columns))
+    gmm = GaussianMixtureModel(2, len(df.columns))
     ll = gmm.log_likelihood(X)
     print(f"log likelihood: {ll}")
