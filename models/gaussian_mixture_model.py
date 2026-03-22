@@ -20,7 +20,7 @@ class GaussianMixtureModel:
         self._pi = np.ones(shape=n_categories) * (1 / n_categories)
 
         # means all at zero
-        self._mu = np.random.random(size=(self.n_categories, self.n_features))
+        self._mu = np.zeros(shape=(self.n_categories, self.n_features))
 
         # variances all at one to prevent initial division by zero
         self._sigma = np.ones((self.n_categories, self.n_features))
@@ -45,6 +45,14 @@ class GaussianMixtureModel:
         """Fits the GMM parameters using the EM algorithm."""
 
         n_samples = samples.shape[0]
+
+        indices = np.random.choice(n_samples, self.n_categories, replace=False)
+        self._mu = samples[indices]
+
+        variance = np.var(samples, axis=0)
+        self._sigma = np.sqrt(variance)[None, :] * np.ones(
+            (self.n_categories, self.n_features)
+        )
 
         # for convergence check
         self.log_likelihood_history = [self.log_likelihood(samples)]
@@ -107,16 +115,16 @@ class GaussianMixtureModel:
 
 
 if __name__ == "__main__":
-    np.random.seed(0)
+    np.random.seed(9951)
 
     df = pd.read_csv("midterm1/train.csv")
     X = df.to_numpy()
 
     gmm = GaussianMixtureModel(4, X.shape[1])
-    log_likelihood = gmm.log_likelihood(X)
-    print(f"log likelihood: {log_likelihood:.4f}")
 
     gmm.fit(X)
+    log_likelihood = gmm.log_likelihood(X)
+    print(f"log likelihood: {log_likelihood:.4f}")
     print(f"BIC: {gmm.bic(X)}")
 
     plt.plot(gmm.log_likelihood_history)
