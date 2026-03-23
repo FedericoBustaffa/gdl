@@ -56,6 +56,7 @@ class GaussianMixtureModel:
 
         # for convergence check
         self.log_likelihood_history = [self.log_likelihood(samples)]
+        self.bic_history = []
 
         for _ in range(200):
             # E-step
@@ -96,6 +97,7 @@ class GaussianMixtureModel:
             curr_log_likelihood = self.log_likelihood(samples)
 
             # convergence check
+            self.bic_history.append(self.bic(samples))
             if abs(curr_log_likelihood - self.log_likelihood_history[-1]) < 1e-4:
                 return
 
@@ -120,12 +122,30 @@ if __name__ == "__main__":
     df = pd.read_csv("midterm1/train.csv")
     X = df.to_numpy()
 
-    gmm = GaussianMixtureModel(4, X.shape[1])
+    gmms = [GaussianMixtureModel(k, X.shape[1]) for k in range(1, 6)]
+    for gmm in gmms:
+        gmm.fit(X)
+        print(f"log likelihood: {gmm.log_likelihood(X):.4f}")
+        print(f"BIC: {gmm.bic(X)}")
 
-    gmm.fit(X)
-    log_likelihood = gmm.log_likelihood(X)
-    print(f"log likelihood: {log_likelihood:.4f}")
-    print(f"BIC: {gmm.bic(X)}")
+    plt.figure(dpi=200)
+    plt.title("Log-Likelihood Curve")
+    for gmm in gmms:
+        plt.plot(gmm.log_likelihood_history, label=f"K = {gmm.n_categories}")
+    plt.xlabel("Iterations")
+    plt.ylabel("Log-Likelihood")
+    plt.grid()
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    plt.plot(gmm.log_likelihood_history)
+    plt.figure(dpi=200)
+    plt.title("BIC Curve")
+    for gmm in gmms:
+        plt.plot(gmm.bic_history, label=f"K = {gmm.n_categories}")
+    plt.xlabel("Iterations")
+    plt.ylabel("BIC")
+    plt.grid()
+    plt.legend()
+    plt.tight_layout()
     plt.show()
