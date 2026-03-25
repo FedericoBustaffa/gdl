@@ -5,3 +5,4 @@ scipy
 pyqt6
 ipykernel
 notebook
+tqdm
