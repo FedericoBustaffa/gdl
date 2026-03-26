@@ -17,15 +17,13 @@ class NaiveBayes:
         Nk = np.asarray(np.unique(y, return_counts=True))[1, :]
         self.pi = Nk / N
 
+        # update phi
         labels = np.unique(y)
         n_features = X.shape[1]
-
         self.phi = []
-
         for k in labels:
             Xk = X[y == k]
             for l in range(n_features):
-                # valori unici della feature l
                 vals, counts = np.unique(Xk[:, l], return_counts=True)
 
                 # total samples in class k
