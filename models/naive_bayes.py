@@ -12,36 +12,53 @@ class NaiveBayes:
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         N = len(y)
+        self.labels = np.unique(y)
 
-        # update pi
-        Nk = np.asarray(np.unique(y, return_counts=True))[1, :]
+        # prior
+        Nk = np.asarray(np.unique(y, return_counts=True))[1]
         self.pi = Nk / N
 
-        # update phi
-        labels = np.unique(y)
         n_features = X.shape[1]
-        self.phi = []
-        for k in labels:
+        self.phi = {}
+
+        for k in self.labels:
             Xk = X[y == k]
+            Nk = len(Xk)
+
+            self.phi[k] = []
+
             for l in range(n_features):
                 vals, counts = np.unique(Xk[:, l], return_counts=True)
 
-                # total samples in class k
-                Nk = len(Xk)
-
-                # likelihood con smoothing
                 alpha = 1
                 prob = (counts + alpha) / (Nk + alpha * len(vals))
 
-                # optional: creare array con lunghezza numero categorie totali
-                # qui assumi che vals siano 0..n-1
                 phi_l = np.zeros(int(np.max(X[:, l]) + 1))
                 phi_l[vals.astype(int)] = prob
 
-                self.phi.append(phi_l)
+                self.phi[k].append(phi_l)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        pass
+        predictions = []
+
+        for x in X:
+            scores = []
+
+            for idx, k in enumerate(self.labels):
+                score = np.log(self.pi[idx])
+
+                for l, val in enumerate(x):
+                    prob = self.phi[k][l][int(val)]
+                    if prob > 0:
+                        score += np.log(prob)
+                    else:
+                        score += -1e9
+
+                scores.append(score)
+
+            predictions.append(self.labels[np.argmax(scores)])
+
+        return np.array(predictions)
 
 
 if __name__ == "__main__":
