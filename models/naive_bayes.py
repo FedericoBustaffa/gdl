@@ -14,27 +14,33 @@ class NaiveBayes:
         N = len(y)
 
         # update pi
-        self.pi = np.asarray(np.unique(y, return_counts=True))[1, :] / N
+        Nk = np.asarray(np.unique(y, return_counts=True))[1, :]
+        self.pi = Nk / N
 
-        values = [np.unique(X, axis=0) for i in range(X.shape[1])]
-        print(values)
-        for v in values:
-            counts = np.asarray(np.unique(v, return_counts=True))[1, :]
-            print(counts)
+        labels = np.unique(y)
+        n_features = X.shape[1]
 
-        # for v in values:
-        #     print(v)
-        # self.phi = [np.zeros_like(values[i] for i in values)]
-        # for v in self.phi:
-        #     print(v)
+        self.phi = []
 
-        #
-        # print(self.pi)
-        # print(self.phi)
-        #
-        # for label in labels:
-        #     Nk = y[y == label]
-        #     self.pi[label] = Nk / N
+        for k in labels:
+            Xk = X[y == k]
+            for l in range(n_features):
+                # valori unici della feature l
+                vals, counts = np.unique(Xk[:, l], return_counts=True)
+
+                # total samples in class k
+                Nk = len(Xk)
+
+                # likelihood con smoothing
+                alpha = 1
+                prob = (counts + alpha) / (Nk + alpha * len(vals))
+
+                # optional: creare array con lunghezza numero categorie totali
+                # qui assumi che vals siano 0..n-1
+                phi_l = np.zeros(int(np.max(X[:, l]) + 1))
+                phi_l[vals.astype(int)] = prob
+
+                self.phi.append(phi_l)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         pass
@@ -62,8 +68,8 @@ if __name__ == "__main__":
     nb = NaiveBayes()
     nb.fit(X_train, y_train)
 
-    # y_pred_train = nb.predict(X_train)
-    # y_pred_test = nb.predict(X_test)
-    #
-    # print(f"train accuracy: {accuracy_score(y_train, y_pred_train):.2f}")
-    # print(f"test accuracy: {accuracy_score(y_test, y_pred_test):.2f}")
+    y_pred_train = nb.predict(X_train)
+    y_pred_test = nb.predict(X_test)
+
+    print(f"train accuracy: {accuracy_score(y_train, y_pred_train):.2f}")
+    print(f"test accuracy: {accuracy_score(y_test, y_pred_test):.2f}")
