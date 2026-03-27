@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gdl"
+version = "0.0.1"
+description = "Simple implementations of probabilistic, deep and generative models"
+authors = [{ name = "Federico Bustaffa", email = "kiko.bustaffa@gmail.com" }]
+
+dependencies = ["numpy", "scipy", "matplotlib", "pandas"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["models"]

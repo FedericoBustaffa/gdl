@@ -1,1 +1,3 @@
 .env/
+gdl.egg-info/
+__pycache__/
