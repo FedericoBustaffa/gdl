@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 
-from models.naive_bayes import NaiveBayes
+from models import NaiveBayes
 
 if __name__ == "__main__":
     X, y = fetch_openml("mushroom", version=1, as_frame=False, return_X_y=True)

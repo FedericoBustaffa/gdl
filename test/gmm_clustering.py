@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from models.gaussian_mixture_model import GaussianMixtureModel
+from models import GaussianMixtureModel
 
 if __name__ == "__main__":
     np.random.seed(9951)
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     df = pd.read_csv("midterm1/train.csv")
     X = df.to_numpy()
 
-    gmms = [GaussianMixtureModel(k, X.shape[1]) for k in range(1, 10)]
+    gmms = [GaussianMixtureModel(k, X.shape[1]) for k in range(1, 5)]
     for gmm in tqdm(gmms, desc="validation", ncols=80):
         gmm.fit(X)
 
