@@ -1,0 +1,3 @@
+[submodule "gdl-lab"]
+	path = gdl-lab
+	url = https://github.com/di-unipi/gdl-lab.git
