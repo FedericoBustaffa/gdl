@@ -1,0 +1,15 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+tensorflow
+tensorflow-datasets
+scikit-learn
+tensorboard
+pydot
+graphviz
+keras-tuner
+pillow
+jupyterlab
+torch
+torchvision
+seaborn
+matplotlib
+tqdm
