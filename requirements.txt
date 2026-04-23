@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 numpy
 matplotlib
 pandas
@@ -7,3 +8,5 @@ pyqt6
 ipykernel
 notebook
 tqdm
+torch
+torchvision
