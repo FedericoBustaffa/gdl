@@ -1,11 +1,11 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-tensorflow
-tensorflow-datasets
+# tensorflow
+# tensorflow-datasets
 scikit-learn
-tensorboard
+# tensorboard
 pydot
 graphviz
-keras-tuner
+# keras-tuner
 pillow
 jupyterlab
 torch
