@@ -7,7 +7,7 @@ import torch.utils.data.dataloader as dataloader
 from sklearn.datasets import load_digits
 from sklearn.metrics import accuracy_score
 from torch.utils.data import random_split
-from tqdm import trange
+from tqdm import tqdm, trange
 
 
 class NeuralNetwork(nn.Module):
@@ -22,14 +22,20 @@ class NeuralNetwork(nn.Module):
             if i < len(layer_sizes) - 2:
                 layers.append(nn.ReLU())
 
-        # layers.append(nn.Sigmoid())
         self.network = nn.Sequential(*layers)
-        self.sgd = optim.SGD(self.network.parameters(), lr=learning_rate)
+
+        self.sgd = optim.SGD(
+            self.network.parameters(),
+            lr=learning_rate,
+            momentum=0.5,
+            weight_decay=1e-3,
+        )
+
         self.loss_fn = nn.CrossEntropyLoss()
 
     def fit(self, tr_loader, val_loader, max_iter: int = 200) -> None:
         self.history = {"tr": [], "val": []}
-        for epoch in trange(max_iter):
+        for epoch in trange(max_iter, ncols=80, desc="training", position=0):
             self.network.train()
             epoch_loss = 0.0
             for x, y in tr_loader:
@@ -79,11 +85,12 @@ if __name__ == "__main__":
 
     tr, val = random_split(dataset, [tr_split, val_split])
 
-    tr_loader = dataloader.DataLoader(tr, 32, shuffle=True)
-    val_loader = dataloader.DataLoader(val, 32)
+    batch_size = 256
+    tr_loader = dataloader.DataLoader(tr, batch_size, shuffle=True)
+    val_loader = dataloader.DataLoader(val, batch_size)
 
     network = NeuralNetwork([64, 64, 10])
-    network.fit(tr_loader, val_loader, max_iter=100)
+    network.fit(tr_loader, val_loader, max_iter=200)
 
     y_true = []
     y_pred = []
