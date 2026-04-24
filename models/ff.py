@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     tr_loader = dataloader.DataLoader(tr, 32, shuffle=True)
     val_loader = dataloader.DataLoader(val, 32)
 
-    network = NeuralNetwork([64, 128, 64, 10])
+    network = NeuralNetwork([64, 64, 10])
     network.fit(tr_loader, val_loader, max_iter=100)
 
     y_true = []
@@ -102,3 +103,15 @@ if __name__ == "__main__":
 
     accuracy = accuracy_score(y_true, y_pred)
     print(f"accuracy: {accuracy:.2f}")
+
+    plt.figure(figsize=(6, 4), dpi=150)
+    plt.title("Training Curve")
+    plt.plot(network.history["tr"], label="training")
+    plt.plot(network.history["val"], label="training")
+
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.grid()
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
