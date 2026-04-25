@@ -113,8 +113,9 @@ if __name__ == "__main__":
 
     plt.figure(figsize=(6, 4), dpi=150)
     plt.title("Training Curve")
+
     plt.plot(network.history["tr"], label="training")
-    plt.plot(network.history["val"], label="training")
+    plt.plot(network.history["val"], label="validation")
 
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
