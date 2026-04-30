@@ -1,52 +1,57 @@
+from typing import Sequence
+
 import matplotlib.pyplot as plt
 import torch
+from sklearn.decomposition import PCA
 from torch import nn, optim
-from torch.utils.data import DataLoader, TensorDataset, random_split
-from torchvision.datasets import MNIST
-from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader
 from tqdm import trange
 
 
-class AutorEncoder(nn.Module):
+class AutoEncoder(nn.Module):
     def __init__(
         self,
+        encoder: Sequence[nn.Module],
+        decoder: Sequence[nn.Module],
         learning_rate: float = 1e-3,
+        lambda_l1: float = 0.0,
     ) -> None:
         super().__init__()
 
-        self.net = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(28 * 28, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 128),
-            nn.ReLU(),
-            nn.Linear(128, 256),
-            nn.ReLU(),
-            nn.Linear(256, 28 * 28),
-            nn.Sigmoid(),
-            nn.Unflatten(1, (1, 28, 28)),
+        self.encoder = nn.Sequential(*encoder)
+        self.decoder = nn.Sequential(*decoder)
+
+        self.optimizer = optim.Adam(
+            self.parameters(),
+            lr=learning_rate,
+            weight_decay=1e-4,
         )
 
-        self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         self.loss_fn = nn.BCELoss()
+
+        # regularization term for sparse AE
+        self.lambda_l1 = lambda_l1
 
         # history tracker
         self.history = {"train": [], "test": []}
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        latent_repr = self.encoder(x)
+        recon = self.decoder(latent_repr)
+
+        return latent_repr, recon
 
     def _train_loop(self, dataloader: DataLoader) -> None:
         self.train()
         epoch_loss = 0.0
         for X, _ in dataloader:
             # prediction
-            pred = self(X)
-            loss = self.loss_fn(pred, X)
+            latent, recon = self(X)
+
+            # loss computation
+            recon_loss = self.loss_fn(recon, X)
+            l1_penalty = latent.abs().mean()
+            loss = recon_loss + self.lambda_l1 * l1_penalty
 
             # track training loss
             epoch_loss += loss.item()
@@ -64,8 +69,8 @@ class AutorEncoder(nn.Module):
         with torch.no_grad():
             for X, _ in dataloader:
                 # prediction
-                pred = self(X)
-                loss = self.loss_fn(pred, X)
+                _, recon = self(X)
+                loss = self.loss_fn(recon, X)
 
                 # track test loss
                 epoch_loss += loss.item()
@@ -83,13 +88,13 @@ class AutorEncoder(nn.Module):
             self._test_loop(test_loader)
 
 
-def show_reconstructions(model, dataloader, n=8):
+def show_reconstructions(model, dataloader, n=5):
     model.eval()
 
     X, _ = next(iter(dataloader))
 
     with torch.no_grad():
-        recon = model(X)
+        _, recon = model(X)
 
     X = X[:n]
     recon = recon[:n]
@@ -112,41 +117,29 @@ def show_reconstructions(model, dataloader, n=8):
     plt.show()
 
 
-if __name__ == "__main__":
-    training_data = MNIST(
-        root="datasets",
-        train=True,
-        download=True,
-        transform=ToTensor(),
-    )
+def show_latent_space(model, dataloader):
 
-    test_data = MNIST(
-        root="datasets",
-        train=False,
-        download=True,
-        transform=ToTensor(),
-    )
+    model.eval()
 
-    train_subset, _ = random_split(training_data, [100, len(training_data) - 100])
-    test_subset, _ = random_split(test_data, [100, len(test_data) - 100])
-    train_loader = DataLoader(train_subset, batch_size=64, shuffle=False)
-    test_loader = DataLoader(test_subset, batch_size=64, shuffle=False)
+    pca = PCA(n_components=2)
 
-    ae = AutorEncoder(learning_rate=0.005)
-    ae.fit(train_loader, test_loader, max_iter=1000)
+    zs = []
+    labels = []
 
-    # loss plot
-    plt.figure(figsize=(6, 4), dpi=150)
-    plt.title("Loss Curve")
+    with torch.no_grad():
+        for X, y in dataloader:
+            z, _ = model(X)
+            zs.append(z)
+            labels.append(y)
 
-    plt.plot(ae.history["train"], label="train")
-    plt.plot(ae.history["test"], label="test")
+    zs = torch.cat(zs).cpu()
+    zs_2d = pca.fit_transform(zs)
+    labels = torch.cat(labels).cpu()
 
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.grid()
-    plt.legend()
-    plt.tight_layout()
+    plt.figure(figsize=(6, 5))
+    plt.scatter(zs_2d[:, 0], zs_2d[:, 1], c=labels, s=5, cmap="tab10")
+    plt.colorbar()
+    plt.title("Latent Space")
+    plt.xlabel("z1")
+    plt.ylabel("z2")
     plt.show()
-
-    show_reconstructions(ae, train_loader)
