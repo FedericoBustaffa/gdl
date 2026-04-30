@@ -6,7 +6,7 @@ from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from tqdm import trange
 
-from models.autoencoder import AutoEncoder, show_latent_space, show_reconstructions
+from models.autoencoder import Autoencoder, show_latent_space, show_reconstructions
 
 if __name__ == "__main__":
     training_data = MNIST(
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         nn.Unflatten(1, (1, 28, 28)),
     ]
 
-    ae = AutoEncoder(
+    ae = Autoencoder(
         encoder=encoder,
         decoder=decoder,
         learning_rate=0.01,

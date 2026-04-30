@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from tqdm import trange
 
 
-class AutoEncoder(nn.Module):
+class Autoencoder(nn.Module):
     def __init__(
         self,
         encoder: Sequence[nn.Module],
