@@ -6,7 +6,8 @@ from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from tqdm import trange
 
-from models.autoencoder import Autoencoder, show_latent_space, show_reconstructions
+from models.autoencoder import Autoencoder
+from models.utils import show_latent_space, show_reconstructions
 
 if __name__ == "__main__":
     training_data = MNIST(

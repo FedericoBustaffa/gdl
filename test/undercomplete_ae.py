@@ -6,7 +6,8 @@ from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from tqdm import trange
 
-from models.autoencoder import Autoencoder, show_latent_space, show_reconstructions
+from models.autoencoder import Autoencoder
+from models.utils import show_latent_space, show_reconstructions
 
 if __name__ == "__main__":
     training_data = MNIST(
@@ -23,41 +24,43 @@ if __name__ == "__main__":
         transform=ToTensor(),
     )
 
-    train_size = 2000
+    train_size = 1000
     train_subset, _ = random_split(
         training_data,
         [train_size, len(training_data) - train_size],
     )
-    train_loader = DataLoader(train_subset, batch_size=256, shuffle=True)
+    train_loader = DataLoader(train_subset, batch_size=64, shuffle=True)
 
     test_size = 50
     test_subset, _ = random_split(test_data, [test_size, len(test_data) - test_size])
     test_loader = DataLoader(test_subset, batch_size=50, shuffle=False)
 
+    latent_dim = 16
+
     encoder = [
+        nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1),  # 28 → 14
+        nn.ReLU(),
+        nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),  # 14 → 7
+        nn.ReLU(),
         nn.Flatten(),
-        nn.Linear(28 * 28, 256),
-        nn.ReLU(),
-        nn.Linear(256, 128),
-        nn.ReLU(),
-        nn.Linear(128, 64),
-        nn.ReLU(),
+        nn.Linear(32 * 7 * 7, latent_dim),
     ]
 
     decoder = [
-        nn.Linear(64, 128),
+        nn.Linear(latent_dim, 32 * 7 * 7),
         nn.ReLU(),
-        nn.Linear(128, 256),
+        nn.Unflatten(1, (32, 7, 7)),
+        nn.ConvTranspose2d(32, 16, 3, 2, 1, 1),
         nn.ReLU(),
-        nn.Linear(256, 28 * 28),
+        nn.ConvTranspose2d(16, 1, 3, 2, 1, 1),
         nn.Sigmoid(),
-        nn.Unflatten(1, (1, 28, 28)),
     ]
 
     ae = Autoencoder(
         encoder=encoder,
         decoder=decoder,
         learning_rate=0.005,
+        weight_decay=5e-5,
         lambda_l1=0.0,
     )
 
@@ -77,5 +80,5 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    show_reconstructions(ae, train_loader)
+    show_reconstructions(ae, test_loader)
     show_latent_space(ae, train_loader)
