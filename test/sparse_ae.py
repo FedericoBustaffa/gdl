@@ -38,17 +38,21 @@ if __name__ == "__main__":
     latent_dim = 2048
 
     encoder = [
-        nn.Flatten(),
-        nn.Linear(28 * 28, 1024),
+        nn.Conv2d(1, 16, 3, padding=1),
         nn.ReLU(),
-        nn.Linear(1024, latent_dim),
+        nn.Conv2d(16, 32, 3, padding=1),
+        nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(32 * 28 * 28, latent_dim),
     ]
 
     decoder = [
-        nn.Linear(latent_dim, 1024),
+        nn.Linear(latent_dim, 32 * 28 * 28),
         nn.ReLU(),
-        nn.Linear(1024, 28 * 28),
-        nn.Unflatten(1, (1, 28, 28)),
+        nn.Unflatten(1, (32, 28, 28)),
+        nn.Conv2d(32, 16, 3, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(16, 1, 3, padding=1),
         nn.Sigmoid(),
     ]
 
@@ -57,7 +61,7 @@ if __name__ == "__main__":
         decoder=decoder,
         learning_rate=0.001,
         weight_decay=1e-4,
-        lambda_l1=1e-3,
+        lambda_l1=1e-2,
         noise=0.1,
     )
 
