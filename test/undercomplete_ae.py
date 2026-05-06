@@ -6,8 +6,8 @@ from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from tqdm import trange
 
-from models.autoencoder import Autoencoder
-from models.utils import show_latent_space, show_reconstructions
+from generative import Autoencoder
+from utils import utils
 
 if __name__ == "__main__":
     training_data = MNIST(
@@ -63,6 +63,7 @@ if __name__ == "__main__":
         learning_rate=0.005,
         weight_decay=1e-4,
         lambda_l1=0.0,
+        noise=0.1,
     )
 
     ae.fit(train_loader, test_loader, max_iter=100)
@@ -81,5 +82,11 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    show_reconstructions(ae, test_loader)
-    show_latent_space(ae, train_loader)
+    utils.show_reconstructions(ae, test_loader)
+    utils.show_latent_space(ae, train_loader)
+    utils.iterative_denoising_grid(
+        model=ae,
+        dataloader=test_loader,
+        noise_levels=[0.1, 0.2, 0.4, 0.6],
+        steps=6,
+    )

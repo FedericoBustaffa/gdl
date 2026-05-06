@@ -18,7 +18,6 @@ class Autoencoder(nn.Module):
         weight_decay: float = 1e-4,
         lambda_l1: float = 0.0,
         noise: float = 0.0,
-        device: str = "cuda",
     ) -> None:
         super().__init__()
 
