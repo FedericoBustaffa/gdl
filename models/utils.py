@@ -59,3 +59,86 @@ def show_latent_space(model, dataloader):
     plt.xlabel("z1")
     plt.ylabel("z2")
     plt.show()
+
+
+def show_denoising(model, dataloader, noise_level=0.5, n=8):
+    model.eval()
+
+    x, _ = next(iter(dataloader))
+    x = x[0:1]  # shape: [1, 1, 28, 28]
+
+    noisy_imgs = []
+    recon_imgs = []
+
+    with torch.no_grad():
+        for _ in range(n):
+            noise = torch.randn_like(x) * noise_level
+            noisy_x = torch.clamp(x + noise, 0.0, 1.0)
+
+            _, recon = model(noisy_x)
+
+            noisy_imgs.append(noisy_x.squeeze().cpu())
+            recon_imgs.append(recon.squeeze().cpu())
+
+    _, axes = plt.subplots(3, n, figsize=(n * 2, 6))
+
+    for i in range(n):
+        axes[0, i].imshow(x.squeeze().cpu(), cmap="gray")
+        axes[0, i].axis("off")
+
+        axes[1, i].imshow(noisy_imgs[i], cmap="gray")
+        axes[1, i].axis("off")
+
+        axes[2, i].imshow(recon_imgs[i], cmap="gray")
+        axes[2, i].axis("off")
+
+    axes[0, 0].set_title("Original")
+    axes[1, 0].set_title("Noisy")
+    axes[2, 0].set_title("Denoised")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def iterative_denoising_grid(model, dataloader, noise_levels, steps):
+    model.eval()
+
+    x, _ = next(iter(dataloader))
+    x = x[0:1]
+
+    n_rows = len(noise_levels)
+    n_cols = steps + 1
+
+    _, axes = plt.subplots(n_rows, n_cols, figsize=(2 * n_cols, 2 * n_rows))
+
+    # se una sola riga, axes non è 2D
+    if n_rows == 1:
+        axes = axes.unsqueeze(0)
+
+    with torch.no_grad():
+        for row, noise_level in enumerate(noise_levels):
+            # crea input rumoroso
+            noisy = torch.clamp(x + torch.randn_like(x) * noise_level, 0.0, 1.0)
+            current = noisy
+
+            imgs = [noisy.squeeze().cpu()]
+
+            # iterazioni
+            for _ in range(steps):
+                _, recon = model(current)
+                current = recon
+                imgs.append(current.squeeze().cpu())
+
+            # plot riga
+            for col in range(n_cols):
+                axes[row, col].imshow(imgs[col], cmap="gray")
+                axes[row, col].axis("off")
+
+                if row == 0:
+                    axes[row, col].set_title(f"step {col}")
+
+            # etichetta riga (rumore)
+            axes[row, 0].set_ylabel(f"noise={noise_level:.2f}", rotation=90, size=12)
+
+    plt.tight_layout()
+    plt.show()

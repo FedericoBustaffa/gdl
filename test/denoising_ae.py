@@ -6,8 +6,8 @@ from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from tqdm import trange
 
+from models import utils
 from models.autoencoder import Autoencoder
-from models.utils import show_latent_space, show_reconstructions
 
 if __name__ == "__main__":
     training_data = MNIST(
@@ -24,6 +24,8 @@ if __name__ == "__main__":
         transform=ToTensor(),
     )
 
+    # torch.manual_seed(42)
+
     train_size = 1000
     train_subset, _ = random_split(
         training_data,
@@ -35,37 +37,37 @@ if __name__ == "__main__":
     test_subset, _ = random_split(test_data, [test_size, len(test_data) - test_size])
     test_loader = DataLoader(test_subset, batch_size=50, shuffle=False)
 
-    latent_dim = 16
+    latent_dim = 32
 
     encoder = [
-        nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1),  # 28 → 14
+        nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),  # 28 → 14
         nn.ReLU(),
-        nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),  # 14 → 7
+        nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),  # 14 → 7
         nn.ReLU(),
         nn.Flatten(),
-        nn.Linear(32 * 7 * 7, latent_dim),
-        nn.ReLU(),
+        nn.Linear(32 * 28 * 28, latent_dim),
     ]
 
     decoder = [
-        nn.Linear(latent_dim, 32 * 7 * 7),
+        nn.Linear(latent_dim, 32 * 28 * 28),
         nn.ReLU(),
-        nn.Unflatten(1, (32, 7, 7)),
-        nn.ConvTranspose2d(32, 16, 3, 2, 1, 1),
+        nn.Unflatten(1, (32, 28, 28)),
+        nn.ConvTranspose2d(32, 16, 3, 1, 1, 0),
         nn.ReLU(),
-        nn.ConvTranspose2d(16, 1, 3, 2, 1, 1),
+        nn.ConvTranspose2d(16, 1, 3, 1, 1, 0),
         nn.Sigmoid(),
     ]
 
     ae = Autoencoder(
         encoder=encoder,
         decoder=decoder,
-        learning_rate=0.005,
+        learning_rate=0.001,
         weight_decay=1e-4,
         lambda_l1=0.0,
+        noise=0.1,
     )
 
-    ae.fit(train_loader, test_loader, max_iter=100)
+    ae.fit(train_loader, test_loader, max_iter=50)
 
     # loss plot
     plt.figure(figsize=(6, 4), dpi=150)
@@ -81,5 +83,12 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    show_reconstructions(ae, test_loader)
-    show_latent_space(ae, train_loader)
+    utils.show_reconstructions(ae, test_loader)
+    utils.show_latent_space(ae, train_loader)
+
+    utils.iterative_denoising_grid(
+        model=ae,
+        dataloader=test_loader,
+        noise_levels=[0.1, 0.2, 0.4, 0.6],
+        steps=6,
+    )

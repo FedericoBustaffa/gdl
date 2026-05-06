@@ -6,8 +6,8 @@ from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 from tqdm import trange
 
+from models import utils
 from models.autoencoder import Autoencoder
-from models.utils import show_latent_space, show_reconstructions
 
 if __name__ == "__main__":
     training_data = MNIST(
@@ -29,31 +29,39 @@ if __name__ == "__main__":
         training_data,
         [train_size, len(training_data) - train_size],
     )
-    train_loader = DataLoader(train_subset, batch_size=128, shuffle=True)
+    train_loader = DataLoader(train_subset, batch_size=64, shuffle=True)
 
     test_size = 50
     test_subset, _ = random_split(test_data, [test_size, len(test_data) - test_size])
     test_loader = DataLoader(test_subset, batch_size=50, shuffle=False)
 
+    latent_dim = 2048
+
     encoder = [
         nn.Flatten(),
-        nn.Linear(28 * 28, 2048),
+        nn.Linear(28 * 28, 1024),
         nn.ReLU(),
+        nn.Linear(1024, latent_dim),
     ]
 
     decoder = [
-        nn.Linear(2048, 28 * 28),
-        nn.Sigmoid(),
+        nn.Linear(latent_dim, 1024),
+        nn.ReLU(),
+        nn.Linear(1024, 28 * 28),
         nn.Unflatten(1, (1, 28, 28)),
+        nn.Sigmoid(),
     ]
 
     ae = Autoencoder(
         encoder=encoder,
         decoder=decoder,
-        learning_rate=0.01,
-        lambda_l1=1e-2,
+        learning_rate=0.001,
+        weight_decay=1e-4,
+        lambda_l1=1e-3,
+        noise=0.1,
     )
-    ae.fit(train_loader, test_loader, max_iter=100)
+
+    ae.fit(train_loader, test_loader, max_iter=50)
 
     # loss plot
     plt.figure(figsize=(6, 4), dpi=150)
@@ -69,5 +77,12 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    show_reconstructions(ae, test_loader)
-    show_latent_space(ae, train_loader)
+    utils.show_reconstructions(ae, test_loader)
+    utils.show_latent_space(ae, train_loader)
+
+    utils.iterative_denoising_grid(
+        model=ae,
+        dataloader=test_loader,
+        noise_levels=[0.1, 0.2, 0.4, 0.6],
+        steps=6,
+    )
