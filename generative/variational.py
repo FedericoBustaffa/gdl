@@ -10,7 +10,8 @@ from tqdm import trange
 
 
 def kl_loss(mu, logvar):
-    return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+    kl = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp())
+    return kl.sum(dim=1).mean()
 
 
 class VariationalEncoder(nn.Module):
@@ -47,6 +48,7 @@ class VariationalAutoencoder(nn.Module):
         decoder: VariationalDecoder,
         learning_rate: float = 1e-3,
         weight_decay: float = 1e-4,
+        beta: float = 1.0,
     ) -> None:
         super().__init__()
 
@@ -59,7 +61,9 @@ class VariationalAutoencoder(nn.Module):
             weight_decay=weight_decay,
         )
 
-        self.recon_loss_fn = nn.BCELoss()
+        self.beta = beta
+
+        self.recon_loss_fn = nn.BCELoss(reduction="sum")
         self.kl_loss_fn = kl_loss
 
         self.history = {
@@ -89,9 +93,9 @@ class VariationalAutoencoder(nn.Module):
             mu, logvar, recon = self(x)
 
             # loss computation
-            recon_loss = self.recon_loss_fn(recon, x)
+            recon_loss = self.recon_loss_fn(recon, x) / x.size(0)
             kl_loss = self.kl_loss_fn(mu, logvar)
-            loss = recon_loss + kl_loss
+            loss = recon_loss + self.beta * kl_loss
 
             # track training loss
             epoch_recon_loss += recon_loss.item()
@@ -144,3 +148,25 @@ class VariationalAutoencoder(nn.Module):
         for _ in trange(max_iter, ncols=80, desc="training"):
             self._train_loop(training_loader)
             self._test_loop(test_loader)
+
+    def reconstruct(self, x: torch.Tensor) -> torch.Tensor:
+        self.eval()
+        mu, _ = self.encoder(x)
+
+        latent = mu
+        recon = self.decoder(latent)
+
+        return recon
+
+    def latent_code(self, x: torch.Tensor) -> torch.Tensor:
+        self.eval()
+        mu, _ = self.encoder(x)
+        return mu
+
+    def sample(self, n_samples: int, latent_dim: int) -> torch.Tensor:
+        self.eval()
+        with torch.no_grad():
+            z = torch.randn(n_samples, latent_dim)
+            samples = self.decoder(z)
+
+        return samples

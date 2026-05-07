@@ -25,18 +25,18 @@ if __name__ == "__main__":
 
     torch.manual_seed(42)
 
-    train_size = 2000
+    train_size = 5000
     train_subset, _ = random_split(
         training_data,
         [train_size, len(training_data) - train_size],
     )
-    train_loader = DataLoader(train_subset, batch_size=64, shuffle=True)
+    train_loader = DataLoader(train_subset, batch_size=256, shuffle=True)
 
     test_size = 50
     test_subset, _ = random_split(test_data, [test_size, len(test_data) - test_size])
     test_loader = DataLoader(test_subset, batch_size=50, shuffle=False)
 
-    latent_dim = 32
+    latent_dim = 128
 
     encoder = VariationalEncoder(
         [
@@ -64,11 +64,12 @@ if __name__ == "__main__":
     vae = VariationalAutoencoder(
         encoder=encoder,
         decoder=decoder,
-        learning_rate=0.001,
-        weight_decay=1e-4,
+        learning_rate=1e-3,
+        weight_decay=1e-5,
+        beta=2,
     )
 
-    vae.fit(train_loader, test_loader, max_iter=200)
+    vae.fit(train_loader, test_loader, max_iter=150)
 
     # loss plot
     plt.figure(figsize=(6, 4), dpi=150)
@@ -86,11 +87,17 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
+    utils.show_reconstructions(vae, train_loader)
     utils.show_reconstructions(vae, test_loader)
     utils.show_latent_space(vae, train_loader)
-    utils.iterative_denoising_grid(
-        model=vae,
-        dataloader=test_loader,
-        noise_levels=[0.1, 0.2, 0.4, 0.6],
-        steps=6,
-    )
+
+    vae.eval()
+    with torch.no_grad():
+        imgs = vae.sample(n_samples=10, latent_dim=latent_dim)
+
+    for img in imgs:
+        plt.imshow(img.squeeze(), cmap="gray")
+        plt.axis("off")
+
+        plt.tight_layout()
+        plt.show()
