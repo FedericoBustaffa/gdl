@@ -8,7 +8,6 @@ def show_reconstructions(model, dataloader, n=5):
     model.eval()
 
     X, _ = next(iter(dataloader))
-    X = X.to(model.device)
 
     with torch.no_grad():
         _, recon = model(X)
@@ -44,7 +43,6 @@ def show_latent_space(model, dataloader):
 
     with torch.no_grad():
         for X, y in dataloader:
-            X = X.to(model.device)
             z, _ = model(X)
             zs.append(z.cpu())
             labels.append(y)
@@ -67,7 +65,7 @@ def show_denoising(model, dataloader, noise_level=0.5, n=8):
     model.eval()
 
     x, _ = next(iter(dataloader))
-    x = x[0:1].to(model.device)  # shape: [1, 1, 28, 28]
+    x = x[0:1]  # shape: [1, 1, 28, 28]
 
     noisy_imgs = []
     recon_imgs = []
@@ -106,7 +104,7 @@ def iterative_denoising_grid(model, dataloader, noise_levels, steps):
     model.eval()
 
     x, _ = next(iter(dataloader))
-    x = x[0:1].to(model.device)
+    x = x[0:1]
 
     n_rows = len(noise_levels)
     n_cols = steps + 1

@@ -62,7 +62,7 @@ if __name__ == "__main__":
         decoder=decoder,
         learning_rate=0.005,
         weight_decay=1e-4,
-        lambda_l1=0.0,
+        l1_penalty=0.0,
         noise=0.1,
     )
 

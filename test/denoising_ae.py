@@ -40,34 +40,35 @@ if __name__ == "__main__":
     latent_dim = 64
 
     encoder = [
-        nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1),  # 28 → 14
+        nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=0),
         nn.ReLU(),
-        # nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),  # 14 → 7
-        # nn.ReLU(),
+        nn.Conv2d(32, 16, kernel_size=3, stride=2, padding=0),
+        nn.ReLU(),
         nn.Flatten(),
-        nn.Linear(32 * 14 * 14, latent_dim),
+        nn.Linear(16 * 6 * 6, latent_dim),
     ]
 
     decoder = [
-        nn.Linear(latent_dim, 32 * 14 * 14),
+        nn.Linear(latent_dim, 16 * 6 * 6),
         nn.ReLU(),
-        nn.Unflatten(1, (32, 14, 14)),
-        nn.ConvTranspose2d(32, 1, 3, 2, 1, 1),
-        # nn.ReLU(),
-        # nn.ConvTranspose2d(16, 1, 3, 2, 1, 1),
+        nn.Unflatten(1, (16, 6, 6)),
+        nn.ConvTranspose2d(16, 32, 3, 2, 0, 0),
+        nn.ReLU(),
+        nn.ConvTranspose2d(32, 1, 3, 2, 0, 1),
         nn.Sigmoid(),
     ]
 
     ae = Autoencoder(
         encoder=encoder,
         decoder=decoder,
-        learning_rate=0.001,
+        loss_fn=nn.BCELoss(),
+        learning_rate=0.01,
         weight_decay=1e-4,
-        lambda_l1=0.0,
+        l1_penalty=0.0,
         noise=0.1,
     )
 
-    ae.fit(train_loader, test_loader, max_iter=50)
+    ae.fit(train_loader, test_loader, max_iter=200)
 
     # loss plot
     plt.figure(figsize=(6, 4), dpi=150)
