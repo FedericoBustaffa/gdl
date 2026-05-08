@@ -6,7 +6,7 @@ from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 
 from generative import VariationalAutoencoder, VariationalDecoder, VariationalEncoder
-from utils import utils
+from utils import plot
 
 if __name__ == "__main__":
     training_data = MNIST(
@@ -90,9 +90,9 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    utils.show_reconstructions(vae, train_loader)
-    utils.show_reconstructions(vae, test_loader)
-    utils.show_latent_space(vae, train_loader)
+    plot.show_reconstructions(vae, train_loader)
+    plot.show_reconstructions(vae, test_loader)
+    plot.show_latent_space(vae, train_loader)
 
     vae.eval()
     with torch.no_grad():

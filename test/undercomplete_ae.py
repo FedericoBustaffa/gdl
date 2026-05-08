@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
+from torch.nn import BCELoss
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
@@ -60,6 +61,7 @@ if __name__ == "__main__":
     ae = Autoencoder(
         encoder=encoder,
         decoder=decoder,
+        loss_fn=BCELoss(reduction="sum"),
         learning_rate=0.005,
         weight_decay=1e-4,
         l1_penalty=0.0,
