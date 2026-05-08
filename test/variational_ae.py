@@ -23,40 +23,40 @@ if __name__ == "__main__":
         transform=ToTensor(),
     )
 
-    torch.manual_seed(42)
+    torch.manual_seed(9951)
 
-    train_size = 5000
+    train_size = 10000
     train_subset, _ = random_split(
         training_data,
         [train_size, len(training_data) - train_size],
     )
-    train_loader = DataLoader(train_subset, batch_size=256, shuffle=True)
+    train_loader = DataLoader(train_subset, batch_size=64, shuffle=True)
 
     test_size = 50
     test_subset, _ = random_split(test_data, [test_size, len(test_data) - test_size])
     test_loader = DataLoader(test_subset, batch_size=50, shuffle=False)
 
-    latent_dim = 128
+    latent_dim = 32
 
     encoder = VariationalEncoder(
         [
-            nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=0),
-            nn.ReLU(),
-            nn.Conv2d(32, 16, kernel_size=3, stride=2, padding=0),
-            nn.ReLU(),
             nn.Flatten(),
+            nn.Linear(28 * 28, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
         ],
-        (16 * 6 * 6, latent_dim),
+        (128, latent_dim),
     )
 
     decoder = VariationalDecoder(
         [
-            nn.Linear(latent_dim, 16 * 6 * 6),
+            nn.Linear(latent_dim, 128),
             nn.ReLU(),
-            nn.Unflatten(1, (16, 6, 6)),
-            nn.ConvTranspose2d(16, 32, 3, 2, 0, 0),
+            nn.Linear(128, 256),
             nn.ReLU(),
-            nn.ConvTranspose2d(32, 1, 3, 2, 0, 1),
+            nn.Linear(256, 28 * 28),
+            nn.Unflatten(1, (1, 28, 28)),
             nn.Sigmoid(),
         ]
     )
@@ -69,14 +69,17 @@ if __name__ == "__main__":
         beta=2,
     )
 
-    vae.fit(train_loader, test_loader, max_iter=150)
+    vae.fit(train_loader, test_loader, max_iter=100)
 
     # loss plot
     plt.figure(figsize=(6, 4), dpi=150)
     plt.title("Loss Curve")
 
+    # train curves
     plt.plot(vae.history["train"]["recon"], label="train recon")
     plt.plot(vae.history["train"]["kl"], label="train kl")
+
+    # test curves
     plt.plot(vae.history["test"]["recon"], label="test recon")
     plt.plot(vae.history["test"]["kl"], label="test kl")
 

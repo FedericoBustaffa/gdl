@@ -106,7 +106,6 @@ class VariationalAutoencoder(nn.Module):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-            # self.optimizer.zero_grad()
 
         self.history["train"]["recon"].append(epoch_recon_loss / n_samples)
         self.history["train"]["kl"].append(epoch_kl_loss / n_samples)
