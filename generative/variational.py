@@ -9,51 +9,25 @@ from torch.utils.data import DataLoader
 from tqdm import trange
 
 
-def kl_loss(mu, logvar):
-    kl = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp())
-    return kl.sum(dim=1).mean()
-
-
-class VariationalEncoder(nn.Module):
-    def __init__(
-        self, hidden_layers: Sequence[nn.Module], output_layer: tuple[int, int]
-    ) -> None:
-        super().__init__()
-        self.core = nn.Sequential(*hidden_layers)
-        self.mean = nn.Linear(output_layer[0], output_layer[1])
-        self.logvar = nn.Linear(output_layer[0], output_layer[1])
-
-    def forward(self, x: torch.Tensor) -> Sequence[torch.Tensor]:
-        z = self.core(x)
-        mu = self.mean(z)
-        logvar = self.logvar(z)
-
-        return mu, logvar
-
-
-class VariationalDecoder(nn.Module):
-    def __init__(self, hidden_layers: Sequence[nn.Module]) -> None:
-        super().__init__()
-        self.core = nn.Sequential(*hidden_layers)
-
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
-        recon = self.core(z)
-        return recon
-
-
 class VariationalAutoencoder(nn.Module):
     def __init__(
         self,
-        encoder: VariationalEncoder,
-        decoder: VariationalDecoder,
+        encoder: Sequence[nn.Module],
+        decoder: Sequence[nn.Module],
+        hidden_dim: int,
+        latent_dim: int,
+        reconstruction_loss,
+        kl_loss,
         learning_rate: float = 1e-3,
         weight_decay: float = 1e-4,
         beta: float = 1.0,
     ) -> None:
         super().__init__()
 
-        self.encoder = encoder
-        self.decoder = decoder
+        self.encoder = nn.Sequential(*encoder)
+        self.decoder = nn.Sequential(*decoder)
+        self.mean = nn.Linear(hidden_dim, latent_dim)
+        self.logvar = nn.Linear(hidden_dim, latent_dim)
 
         self.optimizer = optim.Adam(
             self.parameters(),
@@ -63,7 +37,7 @@ class VariationalAutoencoder(nn.Module):
 
         self.beta = beta
 
-        self.recon_loss_fn = nn.BCELoss(reduction="sum")
+        self.recon_loss_fn = reconstruction_loss
         self.kl_loss_fn = kl_loss
 
         self.history = {
@@ -72,14 +46,17 @@ class VariationalAutoencoder(nn.Module):
         }
 
     def forward(self, x: torch.Tensor) -> Sequence[torch.Tensor]:
-        mu, logvar = self.encoder(x)
-        std = torch.exp(0.5 * logvar)
+        hidden = self.encoder(x)
+        mu = self.mean(hidden)
+        logsigma = self.logvar(hidden)
+
+        std = torch.exp(0.5 * logsigma)
         eps = torch.randn_like(std)
 
         latent = mu + std * eps
         recon = self.decoder(latent)
 
-        return mu, logvar, recon
+        return mu, logsigma, recon
 
     def _train_loop(self, dataloader: DataLoader) -> None:
         self.train()
@@ -148,19 +125,13 @@ class VariationalAutoencoder(nn.Module):
             self._train_loop(training_loader)
             self._test_loop(test_loader)
 
-    def reconstruct(self, x: torch.Tensor) -> torch.Tensor:
+    def encode(self, x: torch.Tensor) -> torch.Tensor:
         self.eval()
-        mu, _ = self.encoder(x)
+        return self.mean(self.encoder(x))
 
-        latent = mu
-        recon = self.decoder(latent)
-
-        return recon
-
-    def latent_code(self, x: torch.Tensor) -> torch.Tensor:
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
         self.eval()
-        mu, _ = self.encoder(x)
-        return mu
+        return self.decoder(z)
 
     def sample(self, n_samples: int, latent_dim: int) -> torch.Tensor:
         self.eval()

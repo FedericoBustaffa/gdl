@@ -5,10 +5,11 @@ from torch.utils.data import DataLoader, random_split
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 
-from generative import VariationalAutoencoder, VariationalDecoder, VariationalEncoder
+from generative import VariationalAutoencoder
 from utils import plot
 
-if __name__ == "__main__":
+
+def get_mnist(train_size, test_size, batch_size):
     training_data = MNIST(
         root="datasets",
         train=True,
@@ -23,53 +24,66 @@ if __name__ == "__main__":
         transform=ToTensor(),
     )
 
-    torch.manual_seed(9951)
-
-    train_size = 10000
     train_subset, _ = random_split(
         training_data,
         [train_size, len(training_data) - train_size],
     )
-    train_loader = DataLoader(train_subset, batch_size=64, shuffle=True)
+    train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
 
-    test_size = 50
     test_subset, _ = random_split(test_data, [test_size, len(test_data) - test_size])
-    test_loader = DataLoader(test_subset, batch_size=50, shuffle=False)
+    test_loader = DataLoader(test_subset, batch_size=batch_size, shuffle=False)
 
+    return train_loader, test_loader
+
+
+def kullback_leibler_loss(mu, logsigma):
+    kl = -0.5 * (1 + logsigma - mu.pow(2) - logsigma.exp())
+    return kl.sum(dim=1).mean()
+
+
+if __name__ == "__main__":
+    torch.manual_seed(9951)
+
+    train_loader, test_loader = get_mnist(
+        train_size=5000,
+        test_size=100,
+        batch_size=128,
+    )
+
+    hidden_dim = 128
     latent_dim = 32
 
-    encoder = VariationalEncoder(
-        [
-            nn.Flatten(),
-            nn.Linear(28 * 28, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-        ],
-        (128, latent_dim),
-    )
+    encoder = [
+        nn.Flatten(),
+        nn.Linear(28 * 28, 256),
+        nn.ReLU(),
+        nn.Linear(256, 128),
+        nn.ReLU(),
+    ]
 
-    decoder = VariationalDecoder(
-        [
-            nn.Linear(latent_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 256),
-            nn.ReLU(),
-            nn.Linear(256, 28 * 28),
-            nn.Unflatten(1, (1, 28, 28)),
-            nn.Sigmoid(),
-        ]
-    )
+    decoder = [
+        nn.Linear(latent_dim, hidden_dim),
+        nn.ReLU(),
+        nn.Linear(128, 256),
+        nn.ReLU(),
+        nn.Linear(256, 28 * 28),
+        nn.Unflatten(1, (1, 28, 28)),
+        nn.Sigmoid(),
+    ]
 
     vae = VariationalAutoencoder(
         encoder=encoder,
         decoder=decoder,
+        hidden_dim=hidden_dim,
+        latent_dim=latent_dim,
+        reconstruction_loss=nn.BCELoss(reduction="sum"),
+        kl_loss=kullback_leibler_loss,
         learning_rate=1e-3,
         weight_decay=1e-5,
         beta=2,
     )
 
-    vae.fit(train_loader, test_loader, max_iter=100)
+    vae.fit(train_loader, test_loader, max_iter=150)
 
     # loss plot
     plt.figure(figsize=(6, 4), dpi=150)
@@ -96,11 +110,11 @@ if __name__ == "__main__":
 
     vae.eval()
     with torch.no_grad():
-        imgs = vae.sample(n_samples=10, latent_dim=latent_dim)
+        imgs = vae.sample(n_samples=5, latent_dim=latent_dim)
 
-    for img in imgs:
-        plt.imshow(img.squeeze(), cmap="gray")
-        plt.axis("off")
+        for img in imgs:
+            plt.imshow(img.squeeze(), cmap="gray")
+            plt.axis("off")
 
-        plt.tight_layout()
-        plt.show()
+            plt.tight_layout()
+            plt.show()

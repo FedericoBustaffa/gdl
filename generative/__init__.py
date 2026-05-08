@@ -1,9 +1,7 @@
 from .autoencoder import Autoencoder
-from .variational import VariationalAutoencoder, VariationalDecoder, VariationalEncoder
+from .variational import VariationalAutoencoder
 
 __all__ = [
     "Autoencoder",
-    "VariationalEncoder",
-    "VariationalDecoder",
     "VariationalAutoencoder",
 ]

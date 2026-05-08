@@ -10,7 +10,7 @@ def show_reconstructions(model, dataloader, n=5):
     X, _ = next(iter(dataloader))
 
     with torch.no_grad():
-        recon = model.reconstruct(X)
+        recon = model.decode(model.encode(X))
 
     X = X[:n].cpu()
     recon = recon[:n].cpu()
@@ -43,7 +43,7 @@ def show_latent_space(model, dataloader):
 
     with torch.no_grad():
         for X, y in dataloader:
-            z = model.latent_code(X)
+            z = model.encode(X)
             zs.append(z.cpu())
             labels.append(y)
 
@@ -65,7 +65,7 @@ def show_denoising(model, dataloader, noise_level=0.5, n=8):
     model.eval()
 
     x, _ = next(iter(dataloader))
-    x = x[0:1]  # shape: [1, 1, 28, 28]
+    x = x[0:1]
 
     noisy_imgs = []
     recon_imgs = []
@@ -75,7 +75,7 @@ def show_denoising(model, dataloader, noise_level=0.5, n=8):
             noise = torch.randn_like(x) * noise_level
             noisy_x = torch.clamp(x + noise, 0.0, 1.0)
 
-            recon = model.reconstruct(noisy_x)
+            recon = model.decode(model.decode(noisy_x))
 
             noisy_imgs.append(noisy_x.squeeze().cpu())
             recon_imgs.append(recon.squeeze().cpu())
@@ -124,7 +124,7 @@ def iterative_denoising_grid(model, dataloader, noise_levels, steps):
             imgs = [noisy.squeeze().cpu()]
 
             for _ in range(steps):
-                recon = model.reconstruct(current)
+                recon = model.decode(model.encode(current))
                 current = torch.clamp(recon, 0.0, 1.0)
                 imgs.append(current.squeeze().cpu())
 
