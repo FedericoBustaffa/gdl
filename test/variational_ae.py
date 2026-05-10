@@ -6,45 +6,12 @@ from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 
 from generative import VariationalAutoencoder
-from utils import plot
-
-
-def get_mnist(train_size, test_size, batch_size):
-    training_data = MNIST(
-        root="datasets",
-        train=True,
-        download=True,
-        transform=ToTensor(),
-    )
-
-    test_data = MNIST(
-        root="datasets",
-        train=False,
-        download=True,
-        transform=ToTensor(),
-    )
-
-    train_subset, _ = random_split(
-        training_data,
-        [train_size, len(training_data) - train_size],
-    )
-    train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
-
-    test_subset, _ = random_split(test_data, [test_size, len(test_data) - test_size])
-    test_loader = DataLoader(test_subset, batch_size=batch_size, shuffle=False)
-
-    return train_loader, test_loader
-
-
-def kullback_leibler_loss(mu, logsigma):
-    kl = -0.5 * (1 + logsigma - mu.pow(2) - logsigma.exp())
-    return kl.sum(dim=1).mean()
-
+from utils import datasets, losses, plot
 
 if __name__ == "__main__":
     torch.manual_seed(9951)
 
-    train_loader, test_loader = get_mnist(
+    train_loader, test_loader = datasets.mnist(
         train_size=5000,
         test_size=100,
         batch_size=128,
@@ -77,7 +44,7 @@ if __name__ == "__main__":
         hidden_dim=hidden_dim,
         latent_dim=latent_dim,
         reconstruction_loss=nn.BCELoss(reduction="sum"),
-        kl_loss=kullback_leibler_loss,
+        kl_loss=losses.kullback_leibler_loss,
         learning_rate=1e-3,
         weight_decay=1e-5,
         beta=2,
