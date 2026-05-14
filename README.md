@@ -1,3 +1,3 @@
 # Generative and Deep Learning
 
-Generative and deep learning course midterms and side projects.
+Generative and deep learning course midterms.
