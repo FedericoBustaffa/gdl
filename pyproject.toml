@@ -31,20 +31,8 @@ name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
-[tool.uv.workspace]
-members = [
-    ".",
-]
-
-[tool.setuptools]
-package-dir = {"" = "."}
-
-[tool.setuptools.packages.find]
-where = ["."]
-
 [dependency-groups]
 dev = [
-    "gdl",
     "ipykernel>=7.2.0",
     "jupyterlab>=4.5.7",
     "notebook>=7.5.5",

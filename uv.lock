@@ -533,7 +533,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "gdl" },
     { name = "ipykernel" },
     { name = "jupyterlab" },
     { name = "notebook" },
@@ -555,7 +554,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "gdl", virtual = "." },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "jupyterlab", specifier = ">=4.5.7" },
     { name = "notebook", specifier = ">=7.5.5" },
